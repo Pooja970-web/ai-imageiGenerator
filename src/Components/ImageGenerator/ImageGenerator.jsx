@@ -1,96 +1,76 @@
 import React, { useRef, useState } from "react";
 import "./ImageGenerator.css";
-import default_image from "../../assets/default_image.svg";
+import default_image from "../../Assets/default_image.svg";
 
 const ImageGenerator = () => {
 
-  const [image_url, setImage_url] = useState(default_image);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const inputRef = useRef(null);
+  const [image_url, setImage_url] = useState("/");
+  let inputRef = useRef(null);
+  const[loading,setLoading] = useState(false);
 
   const imageGenerator = async () => {
-    const prompt = inputRef.current?.value?.trim();
-    if (!prompt) return;
 
-    setLoading(true);
-    setError("");
-
-    try {
-      const res = await fetch("/api/generate-image", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
-      });
-
-      const json = await res.json();
-      if (!res.ok) {
-        throw new Error(json?.error || "Image API error");
-      }
-
-      setImage_url(json.imageUrl);
-    } catch (err) {
-      console.error(err);
-      setError(err?.message || "Could not generate image.");
-      setImage_url(default_image);
-    } finally {
-      setLoading(false);
+    if (inputRef.current.value === "") {
+      return 0;
     }
+setLoading(true);
+    const response = await fetch(
+      "https://api.openai.com/v1/images/generations",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization:
+            "Bearer YOUR_OPENAI_API_KEY",
+            "User-Agent":"Chrome",
+        },
+        body: JSON.stringify({
+          prompt:`${inputRef.current.value}`,
+          n: 1,
+          size: "512x512",
+       
+        }),
+      }
+    );
+
+    let data = await response.json();
+  let data_array = data.data;
+    setImage_url(data_array[0].url);
+    setLoading(false);
   };
 
   return (
     <div className="ai-image-generator">
-
+      
       <div className="header">
-        AI Image <span>Generator</span>
+        AI Image <span>generator</span>
       </div>
 
       <div className="img-loading">
-
         <div className="image">
           <img
-            src={image_url}
-            alt="generated"
-            onError={() => {
-              if (image_url !== default_image) {
-                setError("Could not load AI image; showing placeholder.");
-                setImage_url(default_image);
-              }
-              setLoading(false);
-            }}
+            src={image_url === "/" ? default_image : image_url}
+            alt=""
           />
-          {error && <div className="error-text">{error}</div>}
-        </div>
-
-        <div className="loading">
-
-          <div className={loading ? "loading-bar-full" : "loading-bar"}></div>
-
-          <div className={loading ? "loading-text" : "display-none"}>
-            Loading...
+          <div className="loading">
+            <div className={loading ? "loading-bar-full" : "loading-bar"}>
+              <div className={loading ? "loading-text" : "display-none"}>Loading...</div>
+            </div>
           </div>
-
         </div>
-
       </div>
 
       <div className="search-box">
-
         <input
           type="text"
           ref={inputRef}
           className="search-input"
-          placeholder="Describe what you want"
+          placeholder="Describe what you want to generate"
         />
 
-        <div
-          className="generate-btn"
-          onClick={imageGenerator}
-        >
-          {loading ? "Generating..." : "Generate"}
+        <div className="generate-btn" onClick={() => imageGenerator()}>
+          Generate
         </div>
-
       </div>
 
     </div>
