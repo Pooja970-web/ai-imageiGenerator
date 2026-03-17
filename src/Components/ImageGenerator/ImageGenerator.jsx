@@ -5,43 +5,45 @@ import default_image from "../../Assets/default_image.svg";
 const ImageGenerator = () => {
 
   const [image_url, setImage_url] = useState("/");
-  let inputRef = useRef(null);
-  const[loading,setLoading] = useState(false);
+  const inputRef = useRef(null);
+  const [loading, setLoading] = useState(false);
 
   const imageGenerator = async () => {
+    if (!inputRef.current.value) return;
 
-    if (inputRef.current.value === "") {
-      return 0;
-    }
-setLoading(true);
-    const response = await fetch(
-      "https://api.openai.com/v1/images/generations",
-      {
+    setLoading(true);
+
+    try {
+      const response = await fetch("http://localhost:5000/generate-image", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization:
-            "Bearer YOUR_OPENAI_API_KEY",
-            "User-Agent":"Chrome",
         },
         body: JSON.stringify({
-          prompt:`${inputRef.current.value}`,
-          n: 1,
-          size: "512x512",
-       
+          prompt: inputRef.current.value,
         }),
-      }
-    );
+      });
 
-    let data = await response.json();
-  let data_array = data.data;
-    setImage_url(data_array[0].url);
+      const data = await response.json();
+
+      if (data.image) {
+        setImage_url(data.image);
+      } else {
+        alert("API failed ❌");
+        console.log(data.error);
+      }
+
+    } catch (error) {
+      console.error(error);
+      alert("Backend not connected ❌");
+    }
+
     setLoading(false);
   };
 
   return (
     <div className="ai-image-generator">
-      
+
       <div className="header">
         AI Image <span>generator</span>
       </div>
@@ -54,7 +56,9 @@ setLoading(true);
           />
           <div className="loading">
             <div className={loading ? "loading-bar-full" : "loading-bar"}>
-              <div className={loading ? "loading-text" : "display-none"}>Loading...</div>
+              <div className={loading ? "loading-text" : "display-none"}>
+                Loading...
+              </div>
             </div>
           </div>
         </div>
@@ -68,7 +72,7 @@ setLoading(true);
           placeholder="Describe what you want to generate"
         />
 
-        <div className="generate-btn" onClick={() => imageGenerator()}>
+        <div className="generate-btn" onClick={imageGenerator}>
           Generate
         </div>
       </div>
